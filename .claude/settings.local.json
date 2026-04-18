@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "mcp__caiyun-weather__get_realtime_weather",
+      "mcp__caiyun-weather__get_weekly_forecast",
+      "mcp__weathertrax__weatherTool",
+      "mcp__weathertrax__weatherPlanningTool"
+    ]
+  }
+}
