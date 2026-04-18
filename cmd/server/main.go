@@ -10,10 +10,8 @@ import (
 	"time"
 
 	"github.com/shortlink/shortlink-service/internal/config"
-	"github.com/shortlink/shortlink-service/internal/handler"
-	"github.com/shortlink/shortlink-service/internal/middleware"
 	"github.com/shortlink/shortlink-service/internal/repository"
-	"github.com/shortlink/shortlink-service/internal/service"
+	"github.com/shortlink/shortlink-service/internal/router"
 	"github.com/shortlink/shortlink-service/pkg/cache"
 	"github.com/shortlink/shortlink-service/pkg/database"
 
@@ -49,50 +47,25 @@ func main() {
 	if err := database.AutoMigrate(); err != nil {
 		logger.Fatal("Failed to auto migrate", zap.Error(err))
 	}
-
 	// 5. 初始化 Redis
 	if err := cache.Init(&cfg.Redis); err != nil {
 		logger.Fatal("Failed to init Redis", zap.Error(err))
 	}
 	defer cache.Close()
 
-	// 6. 初始化依赖
+	// 6. 初始化 Repository
 	linkRepo := repository.NewLinkRepository()
-	linkService := service.NewLinkService(linkRepo, &cfg.ShortLink)
-	linkHandler := handler.NewLinkHandler(linkService)
-	redirectHandler := handler.NewRedirectHandler(linkService)
 
 	// 7. 设置 Gin 模式
 	gin.SetMode(cfg.Server.Mode)
 
-	// 8. 创建路由
-	router := gin.New()
-
-	// 注册全局中间件
-	router.Use(middleware.Recovery(logger))
-	router.Use(middleware.Logger(logger))
-
-	// 可选：注册限流中间件
-	if cfg.RateLimit.Enabled {
-		router.Use(middleware.RateLimit(cfg.RateLimit.Rate, cfg.RateLimit.Burst))
-	}
-
-	// 健康检查
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-			"time":   time.Now().Format(time.RFC3339),
-		})
-	})
-
-	// API 路由组
-	api := router.Group("/api/v1")
-	{
-		api.POST("/links", linkHandler.CreateLink)
-	}
-
-	// 短链重定向（根路径）
-	router.GET("/:code", redirectHandler.Redirect)
+	// 8. 创建路由(内部会初始化 Service 和 Handler)
+	router := router.NewRouter(
+		linkRepo,
+		&cfg.ShortLink,
+		&cfg.RateLimit,
+		logger,
+	)
 
 	// 9. 创建 HTTP 服务器
 	srv := &http.Server{
