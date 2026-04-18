@@ -1,0 +1,44 @@
+server:
+  port: 8080
+  mode: debug  # debug, release, test
+
+database:
+  host: localhost
+  port: 3306
+  user: root
+  password: root123
+  dbname: shortlink
+  charset: utf8mb4
+  parseTime: true
+  loc: Local
+  maxIdleConns: 10
+  maxOpenConns: 100
+  connMaxLifetime: 3600  # seconds
+
+redis:
+  host: localhost
+  port: 6380
+  password: ""
+  db: 0
+  poolSize: 20
+  minIdleConns: 5
+
+log:
+  level: debug  # debug, info, warn, error
+  format: json  # json, console
+  outputPath: logs/app.log
+  maxSize: 100    # MB
+  maxBackups: 10
+  maxAge: 30      # days
+  compress: true
+
+shortlink:
+  codeLength: 6
+  epoch: "2024-01-01T00:00:00Z"
+  workerID: 1
+  domain: http://localhost:8080
+
+rateLimit:
+  enabled: true
+  rate: 100      # requests per second
+  burst: 200     # burst size
